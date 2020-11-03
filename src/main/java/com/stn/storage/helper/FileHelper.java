@@ -1,5 +1,7 @@
 package com.stn.storage.helper;
 
+import com.stn.storage.constant.Constant;
+
 import java.io.File;
 
 public class FileHelper {
@@ -19,5 +21,14 @@ public class FileHelper {
         } catch (Exception ex) {
             ex.printStackTrace();
         }
+    }
+
+    private static String[] splitDataEncodedBase64(String encodedBase64) {
+        return encodedBase64.split(Constant.COMMA);
+    }
+
+    public static String getRawDataFromEncodedBase64(String encodedBase64) {
+        String[] temp = splitDataEncodedBase64(encodedBase64);
+        return temp[1];
     }
 }

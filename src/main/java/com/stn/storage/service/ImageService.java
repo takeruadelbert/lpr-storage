@@ -69,6 +69,45 @@ public class ImageService {
         }
     }
 
+    public ResponseEntity uploadEncoded(List<Map<String, String>> payload) {
+        if (payload.isEmpty()) {
+            throw new BadRequestException("Invalid Payload.");
+        }
+        Map<String, Object> result = new HashMap<>();
+        List<Image> uploadedImages = new ArrayList<>();
+        boolean isError = false;
+        String errorMessage = null;
+        for (Map<String, String> data : payload) {
+            String filename = data.get("filename");
+            String encodedFile = data.get("encoded_file");
+
+            try {
+                FileAttribute fileAttribute = new FileAttribute(imageRepository, storagePath, filename);
+                FileOutputStream fileOutputStream = new FileOutputStream(fileAttribute.getFileAbsolutePath());
+                byte[] fileByteArray = Base64.getDecoder().decode(FileHelper.getRawDataFromEncodedBase64(encodedFile));
+                fileOutputStream.write(fileByteArray);
+                fileOutputStream.close();
+
+                uploadedImages.add(fileAttribute.asImage());
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                isError = true;
+                errorMessage = ex.getMessage();
+                break;
+            }
+        }
+        if (isError) {
+            result.put("status", HttpStatus.UNPROCESSABLE_ENTITY);
+            result.put("message", errorMessage);
+            return new ResponseEntity<>(result, HttpStatus.UNPROCESSABLE_ENTITY);
+        }
+        imageRepository.saveAll(uploadedImages);
+        result.put("data", uploadedImages);
+        result.put("status", HttpStatus.OK.value());
+        result.put("message", "Encoded file has successfully been uploaded.");
+        return new ResponseEntity<>(result, HttpStatus.OK);
+    }
+
     public Image getImage(String token) {
         if (token == null || token.isEmpty()) {
             throw new BadRequestException("Invalid token.");
