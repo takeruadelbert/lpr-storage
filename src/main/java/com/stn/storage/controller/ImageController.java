@@ -33,4 +33,9 @@ public class ImageController {
     public ResponseEntity uploadEncoded(@RequestBody List<Map<String, String>> payload) {
         return imageService.uploadEncoded(payload);
     }
+
+    @PostMapping("/upload-url")
+    public ResponseEntity uploadViaURL(@RequestBody Map<String, List<String>> payload) {
+        return imageService.uploadViaURL(payload.get("url"));
+    }
 }

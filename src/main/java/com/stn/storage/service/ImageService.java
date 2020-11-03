@@ -16,6 +16,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.PostConstruct;
 import java.io.FileOutputStream;
+import java.net.URL;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
+import java.nio.channels.ReadableByteChannel;
 import java.util.*;
 
 @Service
@@ -36,37 +40,34 @@ public class ImageService {
     }
 
     public ResponseEntity upload(MultipartFile[] files) {
-        Map<String, Object> result = new HashMap<>();
-        List<Image> data = new ArrayList<>();
-        try {
-            if (files.length != 0) {
-                for (MultipartFile file : files) {
-                    if (!file.isEmpty()) {
-                        FileAttribute fileAttribute = new FileAttribute(imageRepository, storagePath, file.getOriginalFilename());
-
-                        FileOutputStream fileOutputStream = new FileOutputStream(fileAttribute.getFileAbsolutePath());
-                        fileOutputStream.write(file.getBytes());
-                        fileOutputStream.close();
-
-                        data.add(fileAttribute.asImage());
-                    }
-                }
-                imageRepository.saveAll(data);
-                result.put("status", HttpStatus.OK.value());
-                result.put("message", "File(s) has been uploaded successfully.");
-                result.put("data", data);
-                return new ResponseEntity<>(result, HttpStatus.OK);
-            } else {
-                result.put("status", HttpStatus.UNPROCESSABLE_ENTITY);
-                result.put("message", "No File Uploaded.");
-                return new ResponseEntity<>(result, HttpStatus.UNPROCESSABLE_ENTITY);
-            }
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            result.put("status", HttpStatus.UNPROCESSABLE_ENTITY.value());
-            result.put("message", ex.getMessage());
-            return new ResponseEntity<>(result, HttpStatus.UNPROCESSABLE_ENTITY);
+        if (files.length <= 0) {
+            throw new BadRequestException("Invalid file.");
         }
+        Map<String, Object> result = new HashMap<>();
+        List<Image> uploadedImages = new ArrayList<>();
+        boolean isError = false;
+        String message = "File(s) has successfully been uploaded.";
+        for (MultipartFile file : files) {
+            try {
+                if (!file.isEmpty()) {
+                    FileAttribute fileAttribute = new FileAttribute(imageRepository, storagePath, file.getOriginalFilename());
+
+                    FileOutputStream fileOutputStream = new FileOutputStream(fileAttribute.getFileAbsolutePath());
+                    fileOutputStream.write(file.getBytes());
+                    fileOutputStream.close();
+
+                    uploadedImages.add(fileAttribute.asImage());
+                } else {
+                    message = "Nothing has been uploaded.";
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                isError = true;
+                message = ex.getMessage();
+                break;
+            }
+        }
+        return showOutput(result, uploadedImages, isError, message);
     }
 
     public ResponseEntity uploadEncoded(List<Map<String, String>> payload) {
@@ -76,7 +77,7 @@ public class ImageService {
         Map<String, Object> result = new HashMap<>();
         List<Image> uploadedImages = new ArrayList<>();
         boolean isError = false;
-        String errorMessage = null;
+        String message = "Encoded file has successfully been uploaded.";
         for (Map<String, String> data : payload) {
             String filename = data.get("filename");
             String encodedFile = data.get("encoded_file");
@@ -92,19 +93,54 @@ public class ImageService {
             } catch (Exception ex) {
                 ex.printStackTrace();
                 isError = true;
-                errorMessage = ex.getMessage();
+                message = ex.getMessage();
                 break;
             }
         }
+        return showOutput(result, uploadedImages, isError, message);
+    }
+
+    public ResponseEntity uploadViaURL(List<String> urls) {
+        if (urls.isEmpty()) {
+            throw new BadRequestException("Invalid data url.");
+        }
+        Map<String, Object> result = new HashMap<>();
+        List<Image> uploadedImages = new ArrayList<>();
+        boolean isError = false;
+        String message = "Encoded file has successfully been uploaded.";
+        for (String url : urls) {
+            try {
+                URL dataURL = new URL(url);
+                FileAttribute fileAttribute = new FileAttribute(imageRepository, storagePath, dataURL);
+
+                ReadableByteChannel readableByteChannel = Channels.newChannel(dataURL.openStream());
+                FileOutputStream fileOutputStream = new FileOutputStream(fileAttribute.getFileAbsolutePath());
+                FileChannel fileChannel = fileOutputStream.getChannel();
+                fileOutputStream.getChannel()
+                        .transferFrom(readableByteChannel, 0, Long.MAX_VALUE);
+                fileOutputStream.close();
+
+                uploadedImages.add(fileAttribute.asImage());
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                isError = true;
+                message = ex.getMessage();
+                break;
+            }
+        }
+        return showOutput(result, uploadedImages, isError, message);
+    }
+
+    private ResponseEntity showOutput(Map<String, Object> result, List<Image> uploadedImages, boolean isError, String message) {
         if (isError) {
             result.put("status", HttpStatus.UNPROCESSABLE_ENTITY);
-            result.put("message", errorMessage);
+            result.put("message", message);
             return new ResponseEntity<>(result, HttpStatus.UNPROCESSABLE_ENTITY);
         }
         imageRepository.saveAll(uploadedImages);
         result.put("data", uploadedImages);
         result.put("status", HttpStatus.OK.value());
-        result.put("message", "Encoded file has successfully been uploaded.");
+        result.put("message", message);
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 

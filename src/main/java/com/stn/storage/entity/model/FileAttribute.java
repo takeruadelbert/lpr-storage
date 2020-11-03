@@ -25,7 +25,9 @@ public class FileAttribute {
         appendFilenameIfExist();
     }
 
-    public FileAttribute(URL url) {
+    public FileAttribute(ImageRepository imageRepository, String storagePath, URL url) {
+        this.imageRepository = imageRepository;
+        this.storagePath = storagePath;
         name = com.google.common.io.Files.getNameWithoutExtension(url.getFile());
         ext = FileHelper.removeRequestParamFromExtension(com.google.common.io.Files.getFileExtension(url.getFile()));
         appendFilenameIfExist();
