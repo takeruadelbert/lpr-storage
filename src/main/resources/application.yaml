@@ -9,3 +9,8 @@ spring:
       uri: mongodb://${MONGODB_HOST:localhost}:${MONGODB_PORT:27017}/${MONGODB_NAME}
   main:
     allow-bean-definition-overriding: true
+
+storage:
+  name: storage
+  upload:
+    max-file-size: ${MAX_UPLOAD_FILE_SIZE:2000000}

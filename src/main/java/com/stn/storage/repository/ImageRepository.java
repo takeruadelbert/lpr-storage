@@ -7,4 +7,6 @@ import java.util.Optional;
 
 public interface ImageRepository extends MongoRepository<Image, String> {
     Optional<Image> findFirstByToken(String token);
+
+    Optional<Image> findByFilenameAndExt(String name, String ext);
 }
