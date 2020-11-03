@@ -1,8 +1,11 @@
+server:
+  port: ${PORT:6060}
+
 spring:
   profiles:
-    active: ${ENVINRONMENT}
+    active: ${ENVIRONMENT}
   data:
     mongodb:
-      uri: mongodb://${MONGODB_HOST}:${MONGODB_PORT}/${MONGODB_NAME}
+      uri: mongodb://${MONGODB_HOST:localhost}:${MONGODB_PORT:27017}/${MONGODB_NAME}
   main:
     allow-bean-definition-overriding: true
