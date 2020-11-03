@@ -1,0 +1,10 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: create
+  cache:
+    type: none
+
+logging:
+  level:
+    org.springframework.data.mongodb.core.MongoTemplate: DEBUG
