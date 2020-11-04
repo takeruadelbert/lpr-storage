@@ -6,7 +6,12 @@ spring:
     active: ${ENVIRONMENT}
   data:
     mongodb:
-      uri: mongodb://${MONGODB_HOST:localhost}:${MONGODB_PORT:27017}/${MONGODB_NAME}
+      host: ${MONGODB_HOST:localhost}
+      port: ${MONGODB_PORT:20717}
+      authentication-database: ${MONGODB_AUTHENTICATION_DATABASE:admin}
+      username: ${MONGODB_USERNAME:}
+      password: ${MONGODB_PASSWORD:}
+      database: ${MONGODB_DATABASE_NAME:lpr-storage}
   main:
     allow-bean-definition-overriding: true
 
