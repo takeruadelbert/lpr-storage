@@ -33,10 +33,6 @@ public class FileAttribute {
         appendFilenameIfExist();
     }
 
-    public String getFullName() {
-        return name + "." + ext;
-    }
-
     public String getFileTargetPath() {
         return Constant.DIRECTORY_SEPARATOR + storagePath + Constant.DIRECTORY_SEPARATOR + name + "." + ext;
     }

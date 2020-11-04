@@ -6,16 +6,22 @@ import com.stn.storage.entity.model.FileAttribute;
 import com.stn.storage.exception.BadRequestException;
 import com.stn.storage.exception.NotFoundException;
 import com.stn.storage.helper.FileHelper;
+import com.stn.storage.helper.MimeHelper;
 import com.stn.storage.repository.ImageRepository;
+import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.PostConstruct;
+import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
@@ -153,5 +159,51 @@ public class ImageService {
             throw new NotFoundException(String.format("Image with token %s does not exists.", token));
         }
         return optionalImage.get();
+    }
+
+    public ResponseEntity getFile(String token, boolean is_download) {
+        Map<String, Object> result = new HashMap<>();
+        Optional<Image> file = imageRepository.findFirstByToken(token);
+        if (file.isPresent()) {
+            String path = file.get().getPath();
+            path = Constant.DIRECTORY_SEPARATOR + path;
+            HttpHeaders headers = new HttpHeaders();
+            String filename = Constant.PARENT_DIRECTORY + path;
+            try {
+                InputStream inputFile = new FileInputStream(filename);
+                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                byte[] buffer = IOUtils.toByteArray(inputFile);
+                outputStream.write(buffer, 0, buffer.length);
+                String[] temp = path.split("/");
+                String name = temp[temp.length - 1];
+                String extension = FileHelper.getExtensionFile(name);
+                String mimeType = MimeHelper.guess("." + extension);
+                if (is_download) {
+                    headers.set("Content-Type", "application/x-javascript; charset=utf-8");
+                    headers.set("Content-Disposition", "attachment; filename=\"" + name + "");
+                } else {
+                    if (extension.matches("(.*)jpg(.*)") || extension.matches("(.*)jpeg(.*)") || extension.matches("(.*)png(.*)") || extension.matches("(.*)gif(.*)") || extension.matches("(.*)bmp(.*)")) {
+                        headers.set("Content-Type", "image/" + extension);
+                        headers.set("Content-Disposition", "inline; filename=\"" + name + "");
+                    } else if (mimeType != null) {
+                        headers.set("Content-Type", mimeType);
+                        headers.set("Content-Disposition", "attachment; filename=\"" + name + "");
+                    } else {
+                        headers.set("Content-Type", "application/x-javascript; charset=utf-8");
+                        headers.set("Content-Disposition", "attachment; filename=\"" + name + "");
+                    }
+                }
+                return new ResponseEntity<>(outputStream.toByteArray(), headers, HttpStatus.OK);
+            } catch (Exception e) {
+                e.printStackTrace();
+                result.put("status", HttpStatus.NOT_FOUND.value());
+                result.put("message", e.getMessage());
+                return new ResponseEntity<>(result, HttpStatus.NOT_FOUND);
+            }
+        } else {
+            result.put("status", HttpStatus.NOT_FOUND.value());
+            result.put("message", HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>(result, HttpStatus.NOT_FOUND);
+        }
     }
 }

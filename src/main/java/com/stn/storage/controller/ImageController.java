@@ -38,4 +38,13 @@ public class ImageController {
     public ResponseEntity uploadViaURL(@RequestBody Map<String, List<String>> payload) {
         return imageService.uploadViaURL(payload.get("url"));
     }
+
+    @GetMapping("/{token}")
+    public ResponseEntity getFile(@PathVariable String token, @RequestParam(value = "dl", required = false) Integer downloadFlag) {
+        boolean is_dl = false;
+        if (downloadFlag != null) {
+            is_dl = downloadFlag == 1;
+        }
+        return imageService.getFile(token, is_dl);
+    }
 }

@@ -31,4 +31,8 @@ public class FileHelper {
         String[] temp = splitDataEncodedBase64(encodedBase64);
         return temp[1];
     }
+
+    public static String getExtensionFile(String vData) {
+        return vData.substring(vData.lastIndexOf(".") + 1);
+    }
 }
