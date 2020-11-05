@@ -1,6 +1,5 @@
 package com.stn.storage.controller;
 
-import com.stn.storage.entity.Image;
 import com.stn.storage.service.ImageService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,7 +18,7 @@ public class ImageController {
     }
 
     @PostMapping("/get-image")
-    public Image getImage(@RequestBody Map<String, String> data) {
+    public ResponseEntity getImage(@RequestBody Map<String, String> data) {
         String token = data.get("token");
         return imageService.getImage(token);
     }

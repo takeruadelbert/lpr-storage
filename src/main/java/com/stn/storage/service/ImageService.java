@@ -8,6 +8,7 @@ import com.stn.storage.exception.NotFoundException;
 import com.stn.storage.helper.FileHelper;
 import com.stn.storage.helper.MimeHelper;
 import com.stn.storage.repository.ImageRepository;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,10 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.PostConstruct;
-import java.io.ByteArrayOutputStream;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
@@ -150,15 +148,30 @@ public class ImageService {
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
-    public Image getImage(String token) {
+    public ResponseEntity getImage(String token) {
         if (token == null || token.isEmpty()) {
             throw new BadRequestException("Invalid token.");
         }
+        Map<String, Object> result = new HashMap<>();
         Optional<Image> optionalImage = imageRepository.findFirstByToken(token);
         if (!optionalImage.isPresent()) {
             throw new NotFoundException(String.format("Image with token %s does not exists.", token));
         }
-        return optionalImage.get();
+        HttpStatus httpStatus = HttpStatus.OK;
+        String message = "OK";
+        String encodedFile = null;
+        try {
+            String pathFile = Constant.PARENT_DIRECTORY + Constant.DIRECTORY_SEPARATOR + optionalImage.get().getPath();
+            byte[] fileContent = FileUtils.readFileToByteArray(new File(pathFile));
+            encodedFile = Base64.getEncoder().encodeToString(fileContent);
+        } catch (IOException ex) {
+            httpStatus = HttpStatus.UNPROCESSABLE_ENTITY;
+            message = ex.getMessage();
+        }
+        result.put("status", httpStatus.value());
+        result.put("message", message);
+        result.put("data", encodedFile);
+        return new ResponseEntity<>(result, httpStatus);
     }
 
     public ResponseEntity getFile(String token, boolean is_download) {
