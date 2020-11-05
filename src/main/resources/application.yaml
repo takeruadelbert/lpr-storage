@@ -3,14 +3,14 @@ server:
 
 spring:
   profiles:
-    active: ${ENVIRONMENT}
+    active: ${ENVIRONMENT:development}
   data:
     mongodb:
-      host: ${MONGODB_HOST:localhost}
-      port: ${MONGODB_PORT:20717}
+      host: ${MONGODB_HOST:127.0.0.1}
+      port: ${MONGODB_PORT:27017}
       authentication-database: ${MONGODB_AUTHENTICATION_DATABASE:admin}
-      username: ${MONGODB_USERNAME:}
-      password: ${MONGODB_PASSWORD:}
+      username: ${MONGODB_USERNAME:takeru}
+      password: ${MONGODB_PASSWORD:takeru123}
       database: ${MONGODB_DATABASE_NAME:lpr-storage}
   main:
     allow-bean-definition-overriding: true
