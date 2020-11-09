@@ -56,7 +56,7 @@ public class ImageService {
                 if (!file.isEmpty()) {
                     FileAttribute fileAttribute = new FileAttribute(imageRepository, storagePath, file.getOriginalFilename());
 
-                    FileOutputStream fileOutputStream = new FileOutputStream(fileAttribute.getFileAbsolutePath());
+                    FileOutputStream fileOutputStream = FileUtils.openOutputStream(new File(fileAttribute.getFileAbsolutePath()));
                     fileOutputStream.write(file.getBytes());
                     fileOutputStream.close();
 
@@ -88,7 +88,7 @@ public class ImageService {
 
             try {
                 FileAttribute fileAttribute = new FileAttribute(imageRepository, storagePath, filename);
-                FileOutputStream fileOutputStream = new FileOutputStream(fileAttribute.getFileAbsolutePath());
+                FileOutputStream fileOutputStream = FileUtils.openOutputStream(new File(fileAttribute.getFileAbsolutePath()));
                 byte[] fileByteArray = Base64.getDecoder().decode(FileHelper.getRawDataFromEncodedBase64(encodedFile));
                 fileOutputStream.write(fileByteArray);
                 fileOutputStream.close();
@@ -118,7 +118,7 @@ public class ImageService {
                 FileAttribute fileAttribute = new FileAttribute(imageRepository, storagePath, dataURL);
 
                 ReadableByteChannel readableByteChannel = Channels.newChannel(dataURL.openStream());
-                FileOutputStream fileOutputStream = new FileOutputStream(fileAttribute.getFileAbsolutePath());
+                FileOutputStream fileOutputStream = FileUtils.openOutputStream(new File(fileAttribute.getFileAbsolutePath()));
                 FileChannel fileChannel = fileOutputStream.getChannel();
                 fileOutputStream.getChannel()
                         .transferFrom(readableByteChannel, 0, Long.MAX_VALUE);

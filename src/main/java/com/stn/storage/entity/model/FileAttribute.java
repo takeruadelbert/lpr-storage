@@ -34,7 +34,7 @@ public class FileAttribute {
     }
 
     public String getFileTargetPath() {
-        return Constant.DIRECTORY_SEPARATOR + storagePath + Constant.DIRECTORY_SEPARATOR + name + "." + ext;
+        return Constant.DIRECTORY_SEPARATOR + storagePath + Constant.DIRECTORY_SEPARATOR + DatetimeHelper.getCurrentDate() + Constant.DIRECTORY_SEPARATOR + name + "." + ext;
     }
 
     public String getFileAbsolutePath() {
