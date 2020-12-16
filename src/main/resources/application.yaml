@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: ${APP_NAME:lpr-storage}
+    name: lpr-storage-service
   profiles:
     active: ${ENVIRONMENT:development}
   data:
