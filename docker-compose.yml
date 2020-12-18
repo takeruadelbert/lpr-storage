@@ -1,7 +1,5 @@
 version: '3.0'
 services:
-  python:
-    image: python:3.8-slim
   java:
     image: openjdk:8-jdk-slim
   storage:
