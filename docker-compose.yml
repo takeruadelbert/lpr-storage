@@ -1,0 +1,18 @@
+version: '3.0'
+services:
+  python:
+    image: python:3.8-slim
+  java:
+    image: openjdk:8-jdk-slim
+  storage:
+    container_name: storage
+    image: takeruadelbert/storage
+    command: java -jar storage-0.0.1.war -m http.server 7070
+    ports:
+      - 7070:7070
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    env_file:
+      - environment.env
+    network_mode: "host"
