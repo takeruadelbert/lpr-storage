@@ -12,6 +12,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -32,6 +33,9 @@ public class ImageService {
 
     @Value("${storage.name}")
     private String storagePath;
+
+    @Value("${storage.default-image.classpath}")
+    private Resource resource;
 
     @Autowired
     public ImageService(ImageRepository imageRepository) {
@@ -160,8 +164,9 @@ public class ImageService {
         HttpStatus httpStatus = HttpStatus.OK;
         String message = "OK";
         String encodedFile = null;
+        Image image = optionalImage.get();
         try {
-            String pathFile = Constant.PARENT_DIRECTORY + Constant.DIRECTORY_SEPARATOR + optionalImage.get().getPath();
+            String pathFile = image.getIsDeleted() ? image.getPath() : Constant.PARENT_DIRECTORY + Constant.DIRECTORY_SEPARATOR + image.getPath();
             byte[] fileContent = FileUtils.readFileToByteArray(new File(pathFile));
             encodedFile = Base64.getEncoder().encodeToString(fileContent);
         } catch (IOException ex) {
@@ -181,9 +186,9 @@ public class ImageService {
             String path = file.get().getPath();
             path = Constant.DIRECTORY_SEPARATOR + path;
             HttpHeaders headers = new HttpHeaders();
-            String filename = Constant.PARENT_DIRECTORY + path;
+            String filename = file.get().getIsDeleted() ? path : Constant.PARENT_DIRECTORY + path;
             try {
-                InputStream inputFile = new FileInputStream(filename);
+                InputStream inputFile = file.get().getIsDeleted() ? resource.getInputStream() : new FileInputStream(filename);
                 ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
                 byte[] buffer = IOUtils.toByteArray(inputFile);
                 outputStream.write(buffer, 0, buffer.length);

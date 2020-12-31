@@ -21,3 +21,10 @@ storage:
   name: storage
   upload:
     max-file-size: ${MAX_UPLOAD_FILE_SIZE:2000000}
+  default-image:
+    classpath: classpath:default/images/image_not_available.png
+  delete-image-period: ${DELETE_IMAGE_PERIOD:90}
+  background-task:
+    auto-remove-image:
+      fixed-delay: ${BG_TASK_FIXED_DELAY:1800000}
+      init-delay: ${BG_TASK_INIT_DELAY:5000}
