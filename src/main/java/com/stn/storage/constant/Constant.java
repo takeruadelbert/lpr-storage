@@ -8,4 +8,5 @@ public class Constant {
     public static final String WHITESPACE = " ";
     public static final String COMMA = ",";
     public static final String PARENT_DIRECTORY = new File(System.getProperty("user.dir")).getParent() != null ? new File(System.getProperty("user.dir")).getParent() : new File(System.getProperty("user.dir")).toString();
+    public static final String DEFAULT_IMAGE_NOT_AVAILABLE = "image_not_available.png";
 }

@@ -21,3 +21,6 @@ storage:
   name: storage
   upload:
     max-file-size: ${MAX_UPLOAD_FILE_SIZE:2000000}
+  default-image:
+    classpath: classpath:default/images/image_not_available.png
+  delete-image-period: ${DELETE_IMAGE_PERIOD:90}
