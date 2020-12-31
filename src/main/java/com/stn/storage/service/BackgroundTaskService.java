@@ -9,6 +9,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.net.URL;
@@ -30,6 +31,7 @@ public class BackgroundTaskService {
     @Value("${storage.delete-image-period}")
     private Integer deleteImagePeriod;
 
+    @Scheduled(fixedDelayString = "${storage.background-task.auto-remove-image.fixed-delay}", initialDelayString = "${storage.background-task.auto-remove-image.init-delay}")
     public void autoRemoveImages() {
         Collection<Image> imageCollection = imageRepository.findTop100ByIsDeletedFalse();
         if (imageCollection.isEmpty()) {

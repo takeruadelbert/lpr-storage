@@ -1,8 +1,6 @@
 package com.stn.storage.controller;
 
-import com.stn.storage.service.BackgroundTaskService;
 import com.stn.storage.service.ImageService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -14,11 +12,9 @@ import java.util.Map;
 @RequestMapping("/storage")
 public class ImageController {
     private ImageService imageService;
-    private BackgroundTaskService backgroundTaskService;
 
-    public ImageController(ImageService imageService, BackgroundTaskService backgroundTaskService) {
+    public ImageController(ImageService imageService) {
         this.imageService = imageService;
-        this.backgroundTaskService = backgroundTaskService;
     }
 
     @PostMapping("/get-image")
@@ -49,10 +45,5 @@ public class ImageController {
             is_dl = downloadFlag == 1;
         }
         return imageService.getFile(token, is_dl);
-    }
-
-    @PostMapping("/test")
-    public void test() {
-        backgroundTaskService.autoRemoveImages();
     }
 }
