@@ -1,10 +1,8 @@
 version: '3.0'
 services:
-  java:
+  lpr-storage:
     image: openjdk:8-jdk-slim
-  storage:
-    container_name: storage
-    image: takeruadelbert/storage
+    container_name: lpr-storage-container
     command: java -jar storage-0.0.1.war -m http.server 7070
     ports:
       - 7070:7070
