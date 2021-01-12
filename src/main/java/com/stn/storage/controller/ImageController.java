@@ -34,8 +34,9 @@ public class ImageController {
     }
 
     @PostMapping("/upload-url")
-    public ResponseEntity uploadViaURL(@RequestBody Map<String, List<String>> payload) {
-        return imageService.uploadViaURL(payload.get("url"));
+    public ResponseEntity uploadViaURL(@RequestBody Map<String, Object> payload) {
+        List<String> url = (List<String>) payload.get("url");
+        return imageService.uploadViaURL(url);
     }
 
     @GetMapping("/{token}")
