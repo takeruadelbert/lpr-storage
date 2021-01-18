@@ -20,6 +20,7 @@ public class Image {
     private String ext;
     private Boolean isDeleted = false;
     private LocalDateTime created;
+    private Boolean isCloudStorage = false;
 
     public Image(String path, String filename, String ext) {
         this.path = path;
@@ -27,5 +28,13 @@ public class Image {
         this.ext = ext;
         this.token = GeneralHelper.generateToken();
         this.created = LocalDateTime.now();
+    }
+
+    public Image(String filename, String ext, String token, Boolean isCloudStorage) {
+        this.filename = filename;
+        this.ext = ext;
+        this.token = token;
+        this.created = LocalDateTime.now();
+        this.isCloudStorage = isCloudStorage;
     }
 }

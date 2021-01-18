@@ -28,3 +28,12 @@ storage:
     auto-remove-image:
       fixed-delay: ${BG_TASK_FIXED_DELAY:1800000}
       init-delay: ${BG_TASK_INIT_DELAY:5000}
+  cloud:
+    enable: ${ENABLE_CLOUD_STORAGE:false}
+    request-timeout: ${CLOUD_STORAGE_REQUEST_TIMEOUT:5000}
+    ibm:
+      bucket-name: ${CLOUD_STORAGE_BUCKET_NAME:}
+      api-key: ${CLOUD_STORAGE_API_KEY:}
+      endpoint-url: ${CLOUD_STORAGE_ENDPOINT_URL:}
+      location: ${CLOUD_STORAGE_LOCATION:}
+      service-instance-id: ${CLOUD_STORAGE_SERVICE_INSTANCE_ID:}

@@ -1,11 +1,13 @@
 package com.stn.storage.service;
 
+import com.ibm.cloud.objectstorage.services.s3.model.PutObjectResult;
 import com.stn.storage.constant.Constant;
 import com.stn.storage.entity.Image;
 import com.stn.storage.entity.model.FileAttribute;
 import com.stn.storage.exception.BadRequestException;
 import com.stn.storage.exception.NotFoundException;
 import com.stn.storage.helper.FileHelper;
+import com.stn.storage.helper.GeneralHelper;
 import com.stn.storage.helper.MimeHelper;
 import com.stn.storage.repository.ImageRepository;
 import org.apache.commons.io.FileUtils;
@@ -37,9 +39,15 @@ public class ImageService {
     @Value("${storage.default-image.classpath}")
     private Resource resource;
 
+    @Value("${storage.cloud.enable}")
+    private Boolean useCloudStorage;
+
+    private IBMCloudStorageService ibmCloudStorageService;
+
     @Autowired
-    public ImageService(ImageRepository imageRepository) {
+    public ImageService(ImageRepository imageRepository, IBMCloudStorageService ibmCloudStorageService) {
         this.imageRepository = imageRepository;
+        this.ibmCloudStorageService = ibmCloudStorageService;
     }
 
     @PostConstruct
@@ -58,13 +66,18 @@ public class ImageService {
         for (MultipartFile file : files) {
             try {
                 if (!file.isEmpty()) {
-                    FileAttribute fileAttribute = new FileAttribute(imageRepository, storagePath, file.getOriginalFilename());
+                    String filename = file.getOriginalFilename();
+                    if (useCloudStorage) {
+                        uploadedImages.add(storeToCloudStorage(filename, file.getBytes()));
+                    } else {
+                        FileAttribute fileAttribute = new FileAttribute(imageRepository, storagePath, filename);
 
-                    FileOutputStream fileOutputStream = FileUtils.openOutputStream(new File(fileAttribute.getFileAbsolutePath()));
-                    fileOutputStream.write(file.getBytes());
-                    fileOutputStream.close();
+                        FileOutputStream fileOutputStream = FileUtils.openOutputStream(new File(fileAttribute.getFileAbsolutePath()));
+                        fileOutputStream.write(file.getBytes());
+                        fileOutputStream.close();
 
-                    uploadedImages.add(fileAttribute.asImage());
+                        uploadedImages.add(fileAttribute.asImage());
+                    }
                 } else {
                     message = "Nothing has been uploaded.";
                 }
@@ -94,10 +107,14 @@ public class ImageService {
                 FileAttribute fileAttribute = new FileAttribute(imageRepository, storagePath, filename);
                 FileOutputStream fileOutputStream = FileUtils.openOutputStream(new File(fileAttribute.getFileAbsolutePath()));
                 byte[] fileByteArray = Base64.getDecoder().decode(FileHelper.getRawDataFromEncodedBase64(encodedFile));
-                fileOutputStream.write(fileByteArray);
-                fileOutputStream.close();
+                if (useCloudStorage) {
+                    uploadedImages.add(storeToCloudStorage(filename, fileByteArray));
+                } else {
+                    fileOutputStream.write(fileByteArray);
+                    fileOutputStream.close();
 
-                uploadedImages.add(fileAttribute.asImage());
+                    uploadedImages.add(fileAttribute.asImage());
+                }
             } catch (Exception ex) {
                 ex.printStackTrace();
                 isError = true;
@@ -115,20 +132,25 @@ public class ImageService {
         Map<String, Object> result = new HashMap<>();
         List<Image> uploadedImages = new ArrayList<>();
         boolean isError = false;
-        String message = "Encoded file has successfully been uploaded.";
+        String message = "URL file(s) has successfully been uploaded.";
         for (String url : urls) {
             try {
                 URL dataURL = new URL(url);
                 FileAttribute fileAttribute = new FileAttribute(imageRepository, storagePath, dataURL);
-
                 ReadableByteChannel readableByteChannel = Channels.newChannel(dataURL.openStream());
-                FileOutputStream fileOutputStream = FileUtils.openOutputStream(new File(fileAttribute.getFileAbsolutePath()));
-                FileChannel fileChannel = fileOutputStream.getChannel();
-                fileOutputStream.getChannel()
-                        .transferFrom(readableByteChannel, 0, Long.MAX_VALUE);
-                fileOutputStream.close();
+                if (useCloudStorage) {
+                    byte[] bytes = IOUtils.toByteArray(new URL(url));
+                    String filename = String.format("%s.%s", fileAttribute.getName(), fileAttribute.getExt());
+                    uploadedImages.add(storeToCloudStorage(filename, bytes));
+                } else {
+                    FileOutputStream fileOutputStream = FileUtils.openOutputStream(new File(fileAttribute.getFileAbsolutePath()));
+                    FileChannel fileChannel = fileOutputStream.getChannel();
+                    fileOutputStream.getChannel()
+                            .transferFrom(readableByteChannel, 0, Long.MAX_VALUE);
+                    fileOutputStream.close();
 
-                uploadedImages.add(fileAttribute.asImage());
+                    uploadedImages.add(fileAttribute.asImage());
+                }
             } catch (Exception ex) {
                 ex.printStackTrace();
                 isError = true;
@@ -183,18 +205,25 @@ public class ImageService {
         Map<String, Object> result = new HashMap<>();
         Optional<Image> file = imageRepository.findFirstByToken(token);
         if (file.isPresent()) {
-            String path = file.get().getPath();
-            path = Constant.DIRECTORY_SEPARATOR + path;
-            HttpHeaders headers = new HttpHeaders();
-            String filename = file.get().getIsDeleted() ? path : Constant.PARENT_DIRECTORY + path;
             try {
-                InputStream inputFile = file.get().getIsDeleted() ? resource.getInputStream() : new FileInputStream(filename);
+                Image image = file.get();
+                HttpHeaders headers = new HttpHeaders();
+                InputStream inputFile;
+                if (file.get().getIsCloudStorage()) {
+                    inputFile = ibmCloudStorageService.getObject(image.getToken());
+                } else {
+                    String path = image.getPath();
+                    path = Constant.DIRECTORY_SEPARATOR + path;
+
+                    String filename = image.getIsDeleted() ? path : Constant.PARENT_DIRECTORY + path;
+                    inputFile = image.getIsDeleted() ? resource.getInputStream() : new FileInputStream(filename);
+                }
                 ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
                 byte[] buffer = IOUtils.toByteArray(inputFile);
                 outputStream.write(buffer, 0, buffer.length);
-                String[] temp = path.split("/");
-                String name = temp[temp.length - 1];
-                String extension = FileHelper.getExtensionFile(name);
+
+                String name = image.getFilename();
+                String extension = image.getExt();
                 String mimeType = MimeHelper.guess("." + extension);
                 if (is_download) {
                     headers.set("Content-Type", "application/x-javascript; charset=utf-8");
@@ -223,5 +252,16 @@ public class ImageService {
             result.put("message", HttpStatus.NOT_FOUND);
             return new ResponseEntity<>(result, HttpStatus.NOT_FOUND);
         }
+    }
+
+    private Image storeToCloudStorage(String filename, byte[] bytes) {
+        String fileNameWithoutExt = FileHelper.getNameFile(filename);
+        String extFile = FileHelper.getExtensionFile(filename);
+        String generatedToken = GeneralHelper.generateToken();
+        PutObjectResult objectResult = ibmCloudStorageService.uploadObject(bytes, generatedToken);
+        if (objectResult != null) {
+            return new Image(fileNameWithoutExt, extFile, generatedToken, true);
+        }
+        return null;
     }
 }

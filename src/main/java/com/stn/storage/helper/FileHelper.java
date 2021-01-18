@@ -35,4 +35,11 @@ public class FileHelper {
     public static String getExtensionFile(String vData) {
         return vData.substring(vData.lastIndexOf(".") + 1);
     }
+
+    public static String getNameFile(String vData) {
+        if (vData == null) return null;
+        int index = vData.lastIndexOf('.');
+        if (index == -1) return vData;
+        return vData.substring(0, index);
+    }
 }
