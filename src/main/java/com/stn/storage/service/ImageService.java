@@ -132,7 +132,7 @@ public class ImageService {
         Map<String, Object> result = new HashMap<>();
         List<Image> uploadedImages = new ArrayList<>();
         boolean isError = false;
-        String message = "Encoded file has successfully been uploaded.";
+        String message = "URL file(s) has successfully been uploaded.";
         for (String url : urls) {
             try {
                 URL dataURL = new URL(url);
@@ -140,7 +140,8 @@ public class ImageService {
                 ReadableByteChannel readableByteChannel = Channels.newChannel(dataURL.openStream());
                 if (useCloudStorage) {
                     byte[] bytes = IOUtils.toByteArray(new URL(url));
-                    uploadedImages.add(storeToCloudStorage(fileAttribute.getName(), bytes));
+                    String filename = String.format("%s.%s", fileAttribute.getName(), fileAttribute.getExt());
+                    uploadedImages.add(storeToCloudStorage(filename, bytes));
                 } else {
                     FileOutputStream fileOutputStream = FileUtils.openOutputStream(new File(fileAttribute.getFileAbsolutePath()));
                     FileChannel fileChannel = fileOutputStream.getChannel();
@@ -204,18 +205,25 @@ public class ImageService {
         Map<String, Object> result = new HashMap<>();
         Optional<Image> file = imageRepository.findFirstByToken(token);
         if (file.isPresent()) {
-            String path = file.get().getPath();
-            path = Constant.DIRECTORY_SEPARATOR + path;
-            HttpHeaders headers = new HttpHeaders();
-            String filename = file.get().getIsDeleted() ? path : Constant.PARENT_DIRECTORY + path;
             try {
-                InputStream inputFile = file.get().getIsDeleted() ? resource.getInputStream() : new FileInputStream(filename);
+                Image image = file.get();
+                HttpHeaders headers = new HttpHeaders();
+                InputStream inputFile;
+                if (file.get().getIsCloudStorage()) {
+                    inputFile = ibmCloudStorageService.getObject(image.getToken());
+                } else {
+                    String path = image.getPath();
+                    path = Constant.DIRECTORY_SEPARATOR + path;
+
+                    String filename = image.getIsDeleted() ? path : Constant.PARENT_DIRECTORY + path;
+                    inputFile = image.getIsDeleted() ? resource.getInputStream() : new FileInputStream(filename);
+                }
                 ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
                 byte[] buffer = IOUtils.toByteArray(inputFile);
                 outputStream.write(buffer, 0, buffer.length);
-                String[] temp = path.split("/");
-                String name = temp[temp.length - 1];
-                String extension = FileHelper.getExtensionFile(name);
+
+                String name = image.getFilename();
+                String extension = image.getExt();
                 String mimeType = MimeHelper.guess("." + extension);
                 if (is_download) {
                     headers.set("Content-Type", "application/x-javascript; charset=utf-8");

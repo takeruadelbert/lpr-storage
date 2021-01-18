@@ -6,9 +6,7 @@ import com.stn.storage.service.misc.ICloudStorage;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
-import java.io.ObjectOutputStream;
 import java.util.List;
 
 @Service
@@ -35,9 +33,10 @@ public class IBMCloudStorageService extends CloudStorageService implements IClou
     }
 
     @Override
-    public S3Object getObject(String objectName) {
+    public S3ObjectInputStream getObject(String objectName) {
         GetObjectRequest request = new GetObjectRequest(bucketName, objectName);
-        return cosClient.getObject(request);
+        S3Object response = cosClient.getObject(request);
+        return response.getObjectContent();
     }
 
     @Override
