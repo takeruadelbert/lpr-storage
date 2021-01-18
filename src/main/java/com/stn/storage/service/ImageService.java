@@ -104,12 +104,12 @@ public class ImageService {
             String encodedFile = data.get("encoded_file");
 
             try {
-                FileAttribute fileAttribute = new FileAttribute(imageRepository, storagePath, filename);
-                FileOutputStream fileOutputStream = FileUtils.openOutputStream(new File(fileAttribute.getFileAbsolutePath()));
                 byte[] fileByteArray = Base64.getDecoder().decode(FileHelper.getRawDataFromEncodedBase64(encodedFile));
                 if (useCloudStorage) {
                     uploadedImages.add(storeToCloudStorage(filename, fileByteArray));
                 } else {
+                    FileAttribute fileAttribute = new FileAttribute(imageRepository, storagePath, filename);
+                    FileOutputStream fileOutputStream = FileUtils.openOutputStream(new File(fileAttribute.getFileAbsolutePath()));
                     fileOutputStream.write(fileByteArray);
                     fileOutputStream.close();
 
